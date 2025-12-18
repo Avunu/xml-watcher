@@ -29,7 +29,7 @@
           ];
 
           config = {
-            Cmd = [ pkgs.lib.getExe watcherScript ];
+            Cmd = [ (pkgs.lib.getExe watcherScript) ];
             Env = [
               "WATCH_DIR=/watch"
               "WEBHOOK_URL="
@@ -55,7 +55,7 @@
         # For local testing without Docker
         apps.default = {
           type = "app";
-          program = pkgs.lib.getExe watcherScript;
+          program = (pkgs.lib.getExe watcherScript);
         };
 
         devShells.default = pkgs.mkShell {
