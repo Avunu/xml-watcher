@@ -10,6 +10,10 @@ use std::sync::{mpsc::channel, Arc, Mutex};
 use std::time::Duration;
 use tokio::time::sleep;
 
+// Duration to keep files in the ignore list after overwriting them
+// This prevents triggering new webhook events when we modify the file
+const IGNORE_DURATION_SECS: u64 = 2;
+
 #[derive(Debug, Serialize, Deserialize)]
 struct WebhookPayload {
     event: String,
@@ -125,7 +129,11 @@ async fn trigger_webhook(config: &Config, filepath: PathBuf, ignore_list: Arc<Mu
                         .unwrap_or("");
                     
                     // Check if content type is appropriate (text/xml or application/xml)
-                    if content_type.contains("xml") {
+                    // Accept content types that start with these prefixes (may include charset parameter)
+                    let is_xml = content_type.starts_with("text/xml") 
+                        || content_type.starts_with("application/xml");
+                    
+                    if is_xml {
                         match response.text().await {
                             Ok(response_body) => {
                                 if !response_body.is_empty() {
@@ -142,7 +150,7 @@ async fn trigger_webhook(config: &Config, filepath: PathBuf, ignore_list: Arc<Mu
                                             let ignore_list_clone = Arc::clone(&ignore_list);
                                             let filepath_clone = filepath.clone();
                                             tokio::spawn(async move {
-                                                sleep(Duration::from_secs(2)).await;
+                                                sleep(Duration::from_secs(IGNORE_DURATION_SECS)).await;
                                                 let mut ignore = ignore_list_clone.lock().unwrap();
                                                 ignore.remove(&filepath_clone);
                                             });
@@ -192,6 +200,11 @@ async fn main() {
     if !config.watch_dir.exists() {
         eprintln!("ERROR: Watch directory '{}' does not exist", config.watch_dir.display());
         std::process::exit(1);
+    }
+    
+    // Warn if overwrite is enabled without content inclusion
+    if config.overwrite_with_response && !config.include_content {
+        warn!("OVERWRITE_WITH_RESPONSE is enabled but INCLUDE_CONTENT is disabled. File overwrite will not work without including content in the webhook.");
     }
     
     info!("Starting XML file watcher...");
