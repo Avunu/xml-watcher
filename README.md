@@ -92,7 +92,7 @@ With `INCLUDE_CONTENT=true`:
 When `OVERWRITE_WITH_RESPONSE=true` is set (along with `INCLUDE_CONTENT=true`), the watcher will overwrite the original XML file with the response from the webhook server. This feature has the following requirements:
 
 - The webhook must respond with a successful HTTP status code (2xx)
-- The response `Content-Type` header must contain "xml" (e.g., `text/xml` or `application/xml`)
+- The response `Content-Type` header must start with `text/xml` or `application/xml`
 - The response body must not be empty
 
 When these conditions are met, the watcher will:
