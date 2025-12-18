@@ -1,18 +1,41 @@
 {
-  description = "Docker container with inotify watcher that triggers webhooks on new XML files";
+  description = "Docker container with Rust-based file watcher that triggers webhooks on new XML files";
 
   inputs = {
     nixpkgs.url = "github:NixOS/nixpkgs/nixos-unstable";
     flake-utils.url = "github:numtide/flake-utils";
+    rust-overlay = {
+      url = "github:oxalica/rust-overlay";
+      inputs.nixpkgs.follows = "nixpkgs";
+    };
   };
 
-  outputs = { self, nixpkgs, flake-utils }:
+  outputs = { self, nixpkgs, flake-utils, rust-overlay }:
     flake-utils.lib.eachDefaultSystem (system:
       let
-        pkgs = nixpkgs.legacyPackages.${system};
+        overlays = [ (import rust-overlay) ];
+        pkgs = import nixpkgs {
+          inherit system overlays;
+        };
 
-        # The watcher script
-        watcherScript = pkgs.writeScriptBin "xml-watcher" (builtins.readFile ./xml-watcher.sh);
+        rustToolchain = pkgs.rust-bin.stable.latest.default;
+
+        # Build the Rust application
+        xml-watcher = pkgs.rustPlatform.buildRustPackage {
+          pname = "xml-watcher";
+          version = "0.1.0";
+
+          src = ./.;
+
+          cargoLock = {
+            lockFile = ./Cargo.lock;
+          };
+
+          nativeBuildInputs = [ rustToolchain pkgs.pkg-config ];
+          buildInputs = [ pkgs.openssl ];
+
+          PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+        };
 
         # Docker image
         dockerImage = pkgs.dockerTools.buildLayeredImage {
@@ -20,22 +43,19 @@
           tag = "latest";
 
           contents = [
-            watcherScript
-            pkgs.inotify-tools
-            pkgs.curl
-            pkgs.jq
-            pkgs.coreutils
-            pkgs.bash
+            xml-watcher
+            pkgs.cacert
           ];
 
           config = {
-            Cmd = [ (pkgs.lib.getExe watcherScript) ];
+            Cmd = [ "${xml-watcher}/bin/xml-watcher" ];
             Env = [
               "WATCH_DIR=/watch"
               "WEBHOOK_URL="
               "WEBHOOK_METHOD=POST"
               "INCLUDE_FILENAME=true"
               "INCLUDE_CONTENT=false"
+              "RUST_LOG=info"
             ];
             Volumes = {
               "/watch" = { };
@@ -47,23 +67,28 @@
       in
       {
         packages = {
-          default = dockerImage;
+          default = xml-watcher;
           docker = dockerImage;
-          script = watcherScript;
+          xml-watcher = xml-watcher;
         };
 
         # For local testing without Docker
         apps.default = {
           type = "app";
-          program = (pkgs.lib.getExe watcherScript);
+          program = "${xml-watcher}/bin/xml-watcher";
         };
 
         devShells.default = pkgs.mkShell {
           packages = [
-            pkgs.inotify-tools
-            pkgs.curl
-            pkgs.jq
+            rustToolchain
+            pkgs.pkg-config
+            pkgs.openssl
+            pkgs.cargo
+            pkgs.rustc
           ];
+          
+          PKG_CONFIG_PATH = "${pkgs.openssl.dev}/lib/pkgconfig";
+          RUST_LOG = "info";
         };
       }
     );
