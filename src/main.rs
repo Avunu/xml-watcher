@@ -122,7 +122,11 @@ async fn trigger_webhook(config: &Config, filepath: PathBuf, ignore_list: Arc<Mu
                 info!("  Webhook sent successfully (HTTP {})", status.as_u16());
                 
                 // Handle overwriting the file with response if enabled
-                if config.overwrite_with_response && config.include_content {
+                let should_overwrite_with_response = |config: &Config| {
+                    config.overwrite_with_response && config.include_content
+                };
+
+                if should_overwrite_with_response(&config) {
                     let content_type = response.headers()
                         .get("content-type")
                         .and_then(|v| v.to_str().ok())
