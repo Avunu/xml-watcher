@@ -57,6 +57,7 @@ services:
 | `WEBHOOK_URL` | (required) | URL to send webhook requests to |
 | `WEBHOOK_METHOD` | `POST` | HTTP method for webhook requests |
 | `INCLUDE_CONTENT` | `false` | Include full XML file content in payload |
+| `OVERWRITE_WITH_RESPONSE` | `false` | Overwrite file with server response (requires `INCLUDE_CONTENT=true`) |
 | `RUST_LOG` | - | Set log level (trace, debug, info, warn, error) |
 
 ## Webhook Payload
@@ -85,6 +86,21 @@ With `INCLUDE_CONTENT=true`:
   "timestamp": "2024-01-15T10:30:00+00:00"
 }
 ```
+
+## File Overwrite Feature
+
+When `OVERWRITE_WITH_RESPONSE=true` is set (along with `INCLUDE_CONTENT=true`), the watcher will overwrite the original XML file with the response from the webhook server. This feature has the following requirements:
+
+- The webhook must respond with a successful HTTP status code (2xx)
+- The response `Content-Type` header must contain "xml" (e.g., `text/xml` or `application/xml`)
+- The response body must not be empty
+
+When these conditions are met, the watcher will:
+1. Overwrite the original file with the response content
+2. Temporarily ignore watch events for that file to prevent triggering a new webhook
+3. Log the overwrite operation
+
+This is useful for scenarios where the server processes the XML and returns a modified or transformed version.
 
 ## Development
 
