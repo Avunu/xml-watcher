@@ -1,0 +1,13 @@
+# Rust
+target/
+
+# Nix
+result
+result-*
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~

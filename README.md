@@ -1,13 +1,14 @@
 # XML File Watcher Docker Container
 
-A Nix flake that builds a Docker container which monitors a directory tree for new XML files and triggers webhooks when they appear.
+A Nix flake that builds a Docker container which monitors a directory tree for new XML files and triggers webhooks when they appear. Written in Rust for performance and reliability.
 
 ## Features
 
-- Recursive directory monitoring using `inotifywait`
+- Recursive directory monitoring using the `notify` Rust crate
 - Triggers webhook on new XML files (created or moved into watched directory)
 - Configurable webhook URL, method, and payload options
 - Lightweight container built with Nix
+- High-performance Rust implementation with async I/O
 
 ## Building
 
@@ -55,8 +56,8 @@ services:
 | `WATCH_DIR` | `/watch` | Directory to monitor for XML files |
 | `WEBHOOK_URL` | (required) | URL to send webhook requests to |
 | `WEBHOOK_METHOD` | `POST` | HTTP method for webhook requests |
-| `INCLUDE_FILENAME` | `true` | Include filename in payload |
 | `INCLUDE_CONTENT` | `false` | Include full XML file content in payload |
+| `RUST_LOG` | - | Set log level (trace, debug, info, warn, error) |
 
 ## Webhook Payload
 
@@ -70,6 +71,8 @@ The webhook sends a JSON payload like this:
   "timestamp": "2024-01-15T10:30:00+00:00"
 }
 ```
+
+Note: The `filename` field is always included in the payload.
 
 With `INCLUDE_CONTENT=true`:
 
@@ -91,8 +94,14 @@ With `INCLUDE_CONTENT=true`:
 # Enter dev shell
 nix develop
 
-# Or run directly
-WATCH_DIR=/tmp/watch WEBHOOK_URL=http://localhost:8080/hook nix run
+# Build with cargo
+cargo build --release
+
+# Or run directly with Nix
+RUST_LOG=info WATCH_DIR=/tmp/watch WEBHOOK_URL=http://localhost:8080/hook nix run
+
+# Or run with cargo
+RUST_LOG=info WATCH_DIR=/tmp/watch WEBHOOK_URL=http://localhost:8080/hook cargo run
 ```
 
 ### Test the watcher
@@ -102,12 +111,14 @@ WATCH_DIR=/tmp/watch WEBHOOK_URL=http://localhost:8080/hook nix run
 python3 -m http.server 8080
 
 # Terminal 2: Run the watcher
-WATCH_DIR=/tmp/watch WEBHOOK_URL=http://localhost:8080/ nix run
+RUST_LOG=info WATCH_DIR=/tmp/watch WEBHOOK_URL=http://localhost:8080/ nix run
 
 # Terminal 3: Create a test XML file
 mkdir -p /tmp/watch
 echo '<?xml version="1.0"?><test/>' > /tmp/watch/test.xml
 ```
+
+The `RUST_LOG` environment variable controls logging levels (trace, debug, info, warn, error).
 
 ## License
 
