@@ -56,8 +56,8 @@ services:
 | `WATCH_DIR` | `/watch` | Directory to monitor for XML files |
 | `WEBHOOK_URL` | (required) | URL to send webhook requests to |
 | `WEBHOOK_METHOD` | `POST` | HTTP method for webhook requests |
-| `INCLUDE_FILENAME` | `true` | Include filename in payload |
 | `INCLUDE_CONTENT` | `false` | Include full XML file content in payload |
+| `RUST_LOG` | - | Set log level (trace, debug, info, warn, error) |
 
 ## Webhook Payload
 
@@ -71,6 +71,8 @@ The webhook sends a JSON payload like this:
   "timestamp": "2024-01-15T10:30:00+00:00"
 }
 ```
+
+Note: The `filename` field is always included in the payload.
 
 With `INCLUDE_CONTENT=true`:
 

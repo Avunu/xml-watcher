@@ -19,11 +19,11 @@ struct WebhookPayload {
     timestamp: String,
 }
 
+#[derive(Debug, Clone)]
 struct Config {
     watch_dir: PathBuf,
     webhook_url: String,
     webhook_method: String,
-    include_filename: bool,
     include_content: bool,
 }
 
@@ -39,10 +39,6 @@ impl Config {
         let webhook_method = env::var("WEBHOOK_METHOD")
             .unwrap_or_else(|_| "POST".to_string());
         
-        let include_filename = env::var("INCLUDE_FILENAME")
-            .unwrap_or_else(|_| "true".to_string())
-            .to_lowercase() == "true";
-        
         let include_content = env::var("INCLUDE_CONTENT")
             .unwrap_or_else(|_| "false".to_string())
             .to_lowercase() == "true";
@@ -51,7 +47,6 @@ impl Config {
             watch_dir,
             webhook_url,
             webhook_method,
-            include_filename,
             include_content,
         })
     }
@@ -146,7 +141,6 @@ async fn main() {
     info!("  Watch directory: {}", config.watch_dir.display());
     info!("  Webhook URL: {}", config.webhook_url);
     info!("  Webhook method: {}", config.webhook_method);
-    info!("  Include filename: {}", config.include_filename);
     info!("  Include content: {}", config.include_content);
     
     let (tx, rx) = channel();
@@ -171,17 +165,12 @@ async fn main() {
     loop {
         match rx.recv() {
             Ok(event) => {
-                if matches!(event.kind, notify::EventKind::Create(_) | notify::EventKind::Modify(_)) {
+                // Only handle Create events to avoid duplicates (matches bash script behavior)
+                if matches!(event.kind, notify::EventKind::Create(_)) {
                     for path in event.paths {
                         if path.is_file() && is_xml_file(&path) {
                             // Small delay to ensure file is fully written
-                            let config_clone = Config {
-                                watch_dir: config.watch_dir.clone(),
-                                webhook_url: config.webhook_url.clone(),
-                                webhook_method: config.webhook_method.clone(),
-                                include_filename: config.include_filename,
-                                include_content: config.include_content,
-                            };
+                            let config_clone = config.clone();
                             tokio::spawn(async move {
                                 sleep(Duration::from_millis(500)).await;
                                 trigger_webhook(&config_clone, path).await;

@@ -53,7 +53,6 @@
               "WATCH_DIR=/watch"
               "WEBHOOK_URL="
               "WEBHOOK_METHOD=POST"
-              "INCLUDE_FILENAME=true"
               "INCLUDE_CONTENT=false"
               "RUST_LOG=info"
             ];
