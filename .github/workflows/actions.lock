@@ -4,15 +4,15 @@
 version: 'v0.0.3'
 workflows:
     '.github/workflows/actions-lock.yml':
-        - 'actions/checkout@v5.1.0'
+        - 'actions/checkout@v7.0.1'
     '.github/workflows/oci.yml':
-        - 'actions/checkout@v5.1.0'
+        - 'actions/checkout@v7.0.1'
         - 'cachix/install-nix-action@v31.11.5'
-        - 'docker/login-action@v3.7.0'
+        - 'docker/login-action@v4.8.0'
 dependencies:
-    'actions/checkout@v5.1.0':
-        ref: 'v5.1.0'
-        commit: 'sha1-fbc6f3992d24b796d5a048ff273f7fcc4a7b6c09'
+    'actions/checkout@v7.0.1':
+        ref: 'v7.0.1'
+        commit: 'sha1-3d3c42e5aac5ba805825da76410c181273ba90b1'
         owner_id: 44036562
         repo_id: 197814629
     'cachix/install-nix-action@v31.11.5':
@@ -20,8 +20,8 @@ dependencies:
         commit: 'sha1-3dc140bfc76c49fbd4dd958429132e3746bcb086'
         owner_id: 36824654
         repo_id: 212301524
-    'docker/login-action@v3.7.0':
-        ref: 'v3.7.0'
-        commit: 'sha1-c94ce9fb468520275223c153574b00df6fe4bcc9'
+    'docker/login-action@v4.8.0':
+        ref: 'v4.8.0'
+        commit: 'sha1-8aa5831fb8d48d8f76594c7ddde61ae58019f550'
         owner_id: 5429470
         repo_id: 287743349
